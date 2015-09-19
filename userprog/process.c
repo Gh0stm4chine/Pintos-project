@@ -335,7 +335,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   strlcpy(*esp, args, tlength);
   char *arg = strtok_r(*esp," ",&saveptr);
   
-  int numargs = 1;
+  int numargs = 0;
   while(arg != NULL){
     arg = strtok_r(NULL," ",&saveptr);
     numargs += 1;
@@ -343,24 +343,24 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
   char *sp = *esp;
   *esp -= 4;
-  int n = tlength-1;
+  int n = tlength-2;
   while(n>=0){
     if(sp[n] == NULL){
       *esp -= 4;
       int i = n+1;
-      while(sp[i] == " ")
+      while(sp[i] == ' ')
 	i += 1;
-      *((int*)esp) = &sp[i];
-      printf("%x \n", &sp[i]);
+      *((int*)(*esp)) = &sp[i];
     }
     n -= 1;
   }
   *esp -= 4;
-  *((int*)esp) = *esp + 4;
+  *((int*)(*esp)) = &sp[0];
   *esp -= 4;
-  //*esp = numargs;
+  *((int*)(*esp)) = *esp + 4;
   *esp -= 4;
-  *esp -= 12;
+  *((int*)(*esp)) = numargs;
+  *esp -= 4;
 
   hex_dump(*esp, *esp,(int)(PHYS_BASE-*esp), true);
   
