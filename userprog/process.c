@@ -37,11 +37,12 @@ process_execute (const char *file_name)
   if (fn_copy == NULL)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
-
+  
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy); 
+
   return tid;
 }
 
@@ -88,6 +89,7 @@ start_process (void *file_name_)
 int
 process_wait (tid_t child_tid UNUSED) 
 {
+  while(1){}
   return -1;
 }
 
@@ -208,12 +210,22 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
 bool
 load (const char *file_name, void (**eip) (void), void **esp) 
 {
+  
   struct thread *t = thread_current ();
   struct Elf32_Ehdr ehdr;
   struct file *file = NULL;
   off_t file_ofs;
   bool success = false;
   int i;
+
+  
+  //printf("file name: %s \n",file_name);
+  
+  char *saveptr;
+  int tlength = strlen(file_name) + 1;
+  char args[tlength];
+  strlcpy(args,file_name,tlength);
+  char* fileName = strtok_r(file_name, " ",&saveptr);
 
   /* Allocate and activate page directory. */
   t->pagedir = pagedir_create ();
@@ -222,10 +234,10 @@ load (const char *file_name, void (**eip) (void), void **esp)
   process_activate ();
 
   /* Open executable file. */
-  file = filesys_open (file_name);
+  file = filesys_open (fileName);
   if (file == NULL) 
     {
-      printf ("load: %s: open failed\n", file_name);
+      printf ("load: %s: open failed\n", fileName);
       goto done; 
     }
 
@@ -238,7 +250,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
       || ehdr.e_phentsize != sizeof (struct Elf32_Phdr)
       || ehdr.e_phnum > 1024) 
     {
-      printf ("load: %s: error loading executable\n", file_name);
+      printf ("load: %s: error loading executable\n", fileName);
       goto done; 
     }
 
@@ -304,7 +316,55 @@ load (const char *file_name, void (**eip) (void), void **esp)
   /* Set up stack. */
   if (!setup_stack (esp))
     goto done;
+  
+  /* int i = 0; */
+  /* int space = 0; */
+  /* int numargs = 0; */
+  /* while(file_name[i] != '\0'){ */
+  /*   if (file_name[i] == ' '){ */
+  /*     numargs+=1; */
+  /*     while(file_name[i] == ' '){ */
+  /*     i++; */
+  /*     space++;     */
+  /*     } */
+  /*   } */
+  /*   i += 1; */
+  /* } */
+  
+  *((int*)esp) = ((int)(PHYS_BASE - tlength)) & ~0x3;
+  strlcpy(*esp, args, tlength);
+  char *arg = strtok_r(*esp," ",&saveptr);
+  
+  int numargs = 1;
+  while(arg != NULL){
+    arg = strtok_r(NULL," ",&saveptr);
+    numargs += 1;
+  }
 
+  char *sp = *esp;
+  *esp -= 4;
+  int n = tlength-1;
+  while(n>=0){
+    if(sp[n] == NULL){
+      *esp -= 4;
+      int i = n+1;
+      while(sp[i] == " ")
+	i += 1;
+      *((int*)esp) = &sp[i];
+      printf("%x \n", &sp[i]);
+    }
+    n -= 1;
+  }
+  *esp -= 4;
+  *((int*)esp) = *esp + 4;
+  *esp -= 4;
+  //*esp = numargs;
+  *esp -= 4;
+  *esp -= 12;
+
+  hex_dump(*esp, *esp,(int)(PHYS_BASE-*esp), true);
+  
+   
   /* Start address. */
   *eip = (void (*) (void)) ehdr.e_entry;
 
@@ -436,9 +496,9 @@ setup_stack (void **esp)
   if (kpage != NULL) 
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
-      if (success)
+      if (success){
         *esp = PHYS_BASE;
-      else
+      } else
         palloc_free_page (kpage);
     }
   return success;
@@ -458,6 +518,7 @@ install_page (void *upage, void *kpage, bool writable)
 {
   struct thread *t = thread_current ();
 
+  //printf("process info: %s \n", t->name);
   /* Verify that there's not already a page at that virtual
      address, then map our page there. */
   return (pagedir_get_page (t->pagedir, upage) == NULL
