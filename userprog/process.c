@@ -17,6 +17,7 @@
 #include "threads/palloc.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
+#include "threads/synch.h"
 
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
@@ -61,7 +62,12 @@ start_process (void *file_name_)
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
   success = load (file_name, &if_.eip, &if_.esp);
-
+  
+  struct thread *t = thread_current();
+  if (success)
+    t->start = true;
+  sema_up(&t->parent);
+  
   /* If load failed, quit. */
   palloc_free_page (file_name);
   if (!success) 
@@ -89,20 +95,27 @@ start_process (void *file_name_)
 int
 process_wait (tid_t child_tid UNUSED) 
 {
-  while(1){}
-  return -1;
+  enum intr_level level = intr_disable();
+  struct thread *t = thread_by_tid(child_tid);
+  intr_set_level(level);
+  printf("%d parent %d child %d status %d sema %d start  \n", thread_current()->tid, t->tid, t->metastatus, t->parent.value, t->start);
+  sema_down(&t->parent);
+  printf("%d status \n",t->metastatus);
+  int status = t->metastatus;
+  sema_up(&t->zombie);
+  return status;
 }
 
 /* Free the current process's resources. */
 void
 process_exit (void)
 {
-  struct thread *cur = thread_current ();
+  struct thread *t = thread_current ();
   uint32_t *pd;
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
-  pd = cur->pagedir;
+  pd = t->pagedir;
   if (pd != NULL) 
     {
       /* Correct ordering here is crucial.  We must set
@@ -112,10 +125,14 @@ process_exit (void)
          directory before destroying the process's page
          directory, or our active page directory will be one
          that's been freed (and cleared). */
-      cur->pagedir = NULL;
+      t->pagedir = NULL;
       pagedir_activate (NULL);
       pagedir_destroy (pd);
     }
+  
+  printf("%d child status\n", t->metastatus);
+  sema_up(&t->parent);
+  sema_down(&t->zombie);
 }
 
 /* Sets up the CPU for running user code in the current
