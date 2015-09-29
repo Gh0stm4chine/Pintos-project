@@ -5,6 +5,7 @@
 #include "threads/thread.h"
 #include "threads/synch.h"
 #include "process.h"
+#include "filesys/file.h"
 
 static void syscall_handler (struct intr_frame *);
 
@@ -72,10 +73,14 @@ int sys_write (int fd, const void *buffer, unsigned size){
   if(fd == 1){
     putbuf((char*)(buffer), size);  
     return size;
-  } 
+  } else if(fd < numfd) {
+    //write to fd
+  } else {
+    return -1;
+  }
+
   
   printf("system write! %d \n", fd);
-  while(1){};
   thread_exit();
   return 0;
 }

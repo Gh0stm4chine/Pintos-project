@@ -49,6 +49,8 @@ process_execute (const char *file_name)
     intr_set_level(level);
     sema_down(&t->parent);
     if(t->start){
+      t->fd[numfd] = numfd;
+      numfd++ ;
       printf("created tid %d\n",tid);
       return tid;
     } else 
