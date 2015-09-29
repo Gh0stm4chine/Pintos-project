@@ -4,8 +4,10 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 #include "threads/synch.h"
+#include "threads/init.h"
 #include "process.h"
 #include "filesys/file.h"
+
 
 static void syscall_handler (struct intr_frame *);
 
@@ -16,90 +18,123 @@ syscall_init (void)
 }
 
 void sys_halt(){
-  printf("system halt!\n");
-  thread_exit();
+  //printf("system halt!\n");
+  shutdown_power_off();
 }
 
 void sys_exit(int status){
   struct thread *t = thread_current();
   t->metastatus = status;
-  printf("system exit!, %d \n", t->metastatus);
+  //  printf("system exit!, %d \n", t->metastatus);
   thread_exit();
 }
   
 int sys_exec(const char *file){ // make return pid_t
-  printf("system exec!, %s \n",file);
+  //printf("system exec!, %s \n",file);
   return process_execute(file);
   
 }
 
 int sys_wait (int pid){ // make argument pid_t
-  printf("system wait!, %d \n", pid);
+  //printf("system wait!, %d \n", pid);
   return process_wait(pid);
 }
 
 bool sys_create (const char *file, unsigned initial_size){
-  printf("system create!\n");
-  thread_exit();
-  return 0;
+  //printf("system create!\n");
+  return filesys_create(file,initial_size);
 }
 
 bool sys_remove (const char *file){
-  printf("system remove!\n");
-  thread_exit();
-  return 0;
+  //printf("system remove!\n");
+  return filesys_remove(file);
 }
 
 
 int sys_open (const char *file){
-  printf("system open!\n");
-  thread_exit();
-  return 0;
-}
-
-int sys_filesize (int fd){
-  printf("system filesize!\n");
-  thread_exit();
-  return 0;
-}
-
-int sys_read (int fd, void *buffer, unsigned size){
-  printf("system read!\n");
-  thread_exit();
-  return 0;
-}
-
-int sys_write (int fd, const void *buffer, unsigned size){
+  //printf("system open!\n");
   struct thread *t = thread_current();
-  if(fd == 1){
+  int f = filesys_open(file);
+  t->fd[t->numfd] = f ;
+  t->numfd += 1 ;
+  return f;
+}
+
+int sys_filesize (int fdes){
+  struct thread *t = thread_current();
+  //printf("system filesize!\n");
+  int i ;
+  for (i = 2 ; i < t->numfd ; i++) {
+    if(i == fdes)
+      return file_length(t->fd[i]);
+  }
+  return -1 ;
+}
+
+int sys_read (int fdes, void *buffer, unsigned size){
+  //printf("system read!\n");
+  struct thread *t = thread_current();
+  int i ;
+  if (fdes == 0) {
+    input_getc(fdes);
+    return size ;
+  } else {
+    for(i = 2 ; i < t->numfd ; i++) {
+      if (i == fdes) 
+	return file_read(t->fd[i],buffer,size) ;
+    }    
+  }
+  return -1 ;
+}
+
+int sys_write (int fdes, const void *buffer, unsigned size){
+  struct thread *t = thread_current();
+  int i ;
+  //printf("system write! %d \n", fdes);
+  if(fdes == 1){
     putbuf((char*)(buffer), size);  
     return size;
-  } else if(fd < t->numfd) {
-    //write to fd
   } else {
-    return -1;
+    for(i = 2 ; i < t->numfd ; i++) {
+      if (i == fdes) 
+	return file_write(t->fd[i],buffer,size) ;
+    }
   }
-
-  
-  printf("system write! %d \n", fd);
-  thread_exit();
-  return 0;
+  return -1;
 }
 
-void sys_seek (int fd, unsigned position){
-  printf("system seek!\n");
-  thread_exit();
+void sys_seek (int fdes, unsigned position){
+  //printf("system seek!\n");
+  struct thread *t = thread_current();
+  int i ;
+  for (i = 2 ; i < t->numfd ; i++) {
+    if(i == fdes)
+      file_seek(t->fd[i],position);
+  }
 }
 
-unsigned sys_tell (int fd){
-  printf("system tell!\n");
-  thread_exit();
-  return 0;
+unsigned sys_tell (int fdes){
+  //printf("system tell!\n");
+  struct thread *t = thread_current();
+  int i ;
+  for (i = 2 ; i < t->numfd ; i++) {
+    if(i == fdes)
+      return file_tell(t->fd[i]);
+  }
+  return -1 ;
 }
 
-void sys_close (int fd){
-  printf("system close!\n");
-  thread_exit();
+void sys_close (int fdes){
+  // printf("system close!\n");
+  struct thread *t = thread_current();
+  int i ;
+  for (i = 2 ; i < t->numfd ; i++) {
+    if(i == fdes) {
+      file_close(t->fd[i]);
+      t->fd[i] = t->fd[t->numfd - 1];
+      t->numfd--;  
+    }
+  }
 }
 
 static void

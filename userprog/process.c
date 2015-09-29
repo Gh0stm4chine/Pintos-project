@@ -122,6 +122,7 @@ process_exit (void)
 {
   struct thread *t = thread_current ();
 
+  printf("%s: exit(%d)\n", t->name, t->metastatus);
   sema_up(&t->parent);
   sema_down(&t->zombie);
 
@@ -344,19 +345,6 @@ load (const char *file_name, void (**eip) (void), void **esp)
   if (!setup_stack (esp))
     goto done;
   
-  /* int i = 0; */
-  /* int space = 0; */
-  /* int numargs = 0; */
-  /* while(file_name[i] != '\0'){ */
-  /*   if (file_name[i] == ' '){ */
-  /*     numargs+=1; */
-  /*     while(file_name[i] == ' '){ */
-  /*     i++; */
-  /*     space++;     */
-  /*     } */
-  /*   } */
-  /*   i += 1; */
-  /* } */
   
   *((int*)esp) = ((int)(PHYS_BASE - tlength)) & ~0x3;
   strlcpy(*esp, args, tlength);
@@ -389,7 +377,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   *((int*)(*esp)) = numargs;
   *esp -= 4;
 
-  hex_dump(*esp, *esp,(int)(PHYS_BASE-*esp), true);
+  //hex_dump(*esp, *esp,(int)(PHYS_BASE-*esp), true);
   
    
   /* Start address. */
