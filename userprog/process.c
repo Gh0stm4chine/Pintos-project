@@ -49,8 +49,6 @@ process_execute (const char *file_name)
     intr_set_level(level);
     sema_down(&t->parent);
     if(t->start){
-      t->fd[numfd] = numfd;
-      numfd++ ;
       printf("created tid %d\n",tid);
       return tid;
     } else 
@@ -108,10 +106,6 @@ start_process (void *file_name_)
 int
 process_wait (tid_t child_tid UNUSED) 
 {
-  if(child_tid = 134522612){
-    printf("kernal wait map to tid 3");
-    child_tid = 3;
-  }
   enum intr_level level = intr_disable();
   struct thread *t = thread_by_tid(child_tid);
   intr_set_level(level);
@@ -130,11 +124,9 @@ void
 process_exit (void)
 {
   struct thread *t = thread_current ();
-  printf("child 1\n");
+
   sema_up(&t->parent);
-  printf("child 2\n");
   sema_down(&t->zombie);
-  printf("child 3\n");
 
   uint32_t *pd;
 
