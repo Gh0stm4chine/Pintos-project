@@ -70,10 +70,11 @@ int sys_read (int fd, void *buffer, unsigned size){
 }
 
 int sys_write (int fd, const void *buffer, unsigned size){
+  struct thread *t = thread_current();
   if(fd == 1){
     putbuf((char*)(buffer), size);  
     return size;
-  } else if(fd < numfd) {
+  } else if(fd < t->numfd) {
     //write to fd
   } else {
     return -1;
@@ -104,7 +105,7 @@ void sys_close (int fd){
 static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
-  hex_dump(f->esp, f->esp, 20, true);
+  // hex_dump(f->esp, f->esp, 20, true);
   int sys_num = *((int*)(f->esp));
   int arg0 = *((int*)(f->esp)+1);
   int arg1 = *((int*)(f->esp)+2);
@@ -116,26 +117,25 @@ syscall_handler (struct intr_frame *f UNUSED)
   case SYS_EXIT:
     sys_exit(arg0); break;
   case SYS_EXEC:
-    sys_exec((char*)arg0); break;
+    f->eax = sys_exec((char*)arg0); break;
   case SYS_WAIT:
-    sys_wait(arg0); break;
+    f->eax = sys_wait(arg0); break;
   case SYS_CREATE:
     sys_create((char*)arg0,(unsigned)arg1); break;
   case SYS_REMOVE:
     sys_remove((char*)arg0); break;
   case SYS_OPEN:
-
-    sys_open((char*)arg0); break;
+    f->eax = sys_open((char*)arg0); break;
   case SYS_FILESIZE:
-    sys_filesize(arg0); break;
+    f->eax = sys_filesize(arg0); break;
   case SYS_READ:
-    sys_read(arg0,(void*)arg1,(unsigned)arg2); break;
+    f->eax = sys_read(arg0,(void*)arg1,(unsigned)arg2); break;
   case SYS_WRITE:
-    sys_write(arg0,(void*)arg1,(unsigned)arg2); break;
+    f->eax = sys_write(arg0,(void*)arg1,(unsigned)arg2); break;
   case SYS_SEEK:
     sys_seek(arg0,(unsigned)arg1); break;
   case SYS_TELL:
-    sys_tell(arg0); break;
+    f->eax = sys_tell(arg0); break;
   case SYS_CLOSE:
     sys_close(arg0); break;
   default:  

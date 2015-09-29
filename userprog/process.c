@@ -49,7 +49,6 @@ process_execute (const char *file_name)
     intr_set_level(level);
     sema_down(&t->parent);
     if(t->start){
-      printf("created tid %d\n",tid);
       return tid;
     } else 
       return -1;
@@ -111,9 +110,7 @@ process_wait (tid_t child_tid UNUSED)
   intr_set_level(level);
   if(t == NULL)
     return -1;
-  printf("wait 1, %d, %d \n",t->metastatus, t->parent.value);
   sema_down(&t->parent);
-  printf("wait 2\n");
   int status = t->metastatus;
   sema_up(&t->zombie);
   return status;
