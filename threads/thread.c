@@ -491,10 +491,8 @@ init_thread (struct thread *t, const char *name, int priority)
   t->start = 0;
   sema_init(&t->parent, 0);
   sema_init(&t->zombie, 0);
-  t->fd[0] = 0 ;
-  t->fd[1] = 1 ;
-  t->numfd = 2;
-
+  t->fd = NULL;
+  
   t->magic = THREAD_MAGIC;
   list_push_back (&all_list, &t->allelem);
 }

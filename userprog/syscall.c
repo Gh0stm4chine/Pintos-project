@@ -53,52 +53,50 @@ bool sys_remove (const char *file){
 
 int sys_open (const char *file){
   //printf("system open!\n");
+  int i = 2 ; //reserve 0 & 1 for STDIN & STDOUT
   struct thread *t = thread_current();
-  int f = filesys_open(file);
-  t->fd[t->numfd] = f ;
-  t->numfd += 1 ;
-  return f;
+  if (t->fd == NULL) {
+    t->fd = malloc(128*sizeof(struct file *));  
+  }
+  struct file *f = filesys_open(file);
+  while(t->fd[i] != NULL) {
+    i++;
+  }  
+  t->fd[i] = f;
+  return i ;
 }
 
 int sys_filesize (int fdes){
   struct thread *t = thread_current();
   //printf("system filesize!\n");
-  int i ;
-  for (i = 2 ; i < t->numfd ; i++) {
-    if(i == fdes)
-      return file_length(t->fd[i]);
-  }
-  return -1 ;
+  if (t->fd[fdes] == NULL || fdes > 128 || fdes < 2)
+	  return -1 ;
+  else
+    return file_length(t->fd[fdes]);
 }
 
 int sys_read (int fdes, void *buffer, unsigned size){
   //printf("system read!\n");
   struct thread *t = thread_current();
-  int i ;
   if (fdes == 0) {
-    input_getc(fdes);
+    //input_getc(fdes);
     return size ;
   } else {
-    for(i = 2 ; i < t->numfd ; i++) {
-      if (i == fdes) 
-	return file_read(t->fd[i],buffer,size) ;
-    }    
+      if (t->fd[fdes] != NULL && fdes < 128 && fdes > 1) 
+	return file_read(t->fd[fdes],buffer,size);      
   }
   return -1 ;
 }
 
 int sys_write (int fdes, const void *buffer, unsigned size){
   struct thread *t = thread_current();
-  int i ;
   //printf("system write! %d \n", fdes);
   if(fdes == 1){
     putbuf((char*)(buffer), size);  
     return size;
   } else {
-    for(i = 2 ; i < t->numfd ; i++) {
-      if (i == fdes) 
-	return file_write(t->fd[i],buffer,size) ;
-    }
+    if (t->fd[fdes] != NULL && fdes < 128 && fdes > 1)
+      return file_write(t->fd[fdes],buffer,size);
   }
   return -1;
 }
@@ -106,35 +104,23 @@ int sys_write (int fdes, const void *buffer, unsigned size){
 void sys_seek (int fdes, unsigned position){
   //printf("system seek!\n");
   struct thread *t = thread_current();
-  int i ;
-  for (i = 2 ; i < t->numfd ; i++) {
-    if(i == fdes)
-      file_seek(t->fd[i],position);
-  }
+  if (t->fd[fdes] != NULL && fdes < 128 && fdes > 1)
+    file_seek(t->fd[fdes],position);
 }
 
 unsigned sys_tell (int fdes){
   //printf("system tell!\n");
   struct thread *t = thread_current();
-  int i ;
-  for (i = 2 ; i < t->numfd ; i++) {
-    if(i == fdes)
-      return file_tell(t->fd[i]);
-  }
+  if (t->fd[fdes] != NULL && fdes < 128 && fdes > 1)
+    return file_tell(t->fd[fdes]);
   return -1 ;
 }
 
 void sys_close (int fdes){
   // printf("system close!\n");
   struct thread *t = thread_current();
-  int i ;
-  for (i = 2 ; i < t->numfd ; i++) {
-    if(i == fdes) {
-      file_close(t->fd[i]);
-      t->fd[i] = t->fd[t->numfd - 1];
-      t->numfd--;  
-    }
-  }
+  if (t->fd[fdes] != NULL && fdes < 128 && fdes > 1) 
+    t->fd[fdes] = NULL ;
 }
 
 static void

@@ -103,8 +103,7 @@ struct thread
     bool start;
     struct semaphore parent;
     struct semaphore zombie;
-    int fd[128];
-    int numfd ;
+    struct file **fd;
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
