@@ -43,6 +43,17 @@ process_execute (const char *file_name)
   tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy); 
+  else{
+    enum intr_level level = intr_disable();
+    struct thread *t = thread_by_tid(tid);
+    intr_set_level(level);
+    sema_down(&t->parent);
+    if(t->start){
+      printf("created tid %d\n",tid);
+      return tid;
+    } else 
+      return -1;
+  }
 
   return tid;
 }
@@ -95,12 +106,18 @@ start_process (void *file_name_)
 int
 process_wait (tid_t child_tid UNUSED) 
 {
+  if(child_tid = 134522612){
+    printf("kernal wait map to tid 3");
+    child_tid = 3;
+  }
   enum intr_level level = intr_disable();
   struct thread *t = thread_by_tid(child_tid);
   intr_set_level(level);
-  printf("%d parent %d child %d status %d sema %d start  \n", thread_current()->tid, t->tid, t->metastatus, t->parent.value, t->start);
+  if(t == NULL)
+    return -1;
+  printf("wait 1, %d, %d \n",t->metastatus, t->parent.value);
   sema_down(&t->parent);
-  printf("%d status \n",t->metastatus);
+  printf("wait 2\n");
   int status = t->metastatus;
   sema_up(&t->zombie);
   return status;
@@ -111,6 +128,12 @@ void
 process_exit (void)
 {
   struct thread *t = thread_current ();
+  printf("child 1\n");
+  sema_up(&t->parent);
+  printf("child 2\n");
+  sema_down(&t->zombie);
+  printf("child 3\n");
+
   uint32_t *pd;
 
   /* Destroy the current process's page directory and switch back
@@ -128,11 +151,7 @@ process_exit (void)
       t->pagedir = NULL;
       pagedir_activate (NULL);
       pagedir_destroy (pd);
-    }
-  
-  printf("%d child status\n", t->metastatus);
-  sema_up(&t->parent);
-  sema_down(&t->zombie);
+    }  
 }
 
 /* Sets up the CPU for running user code in the current

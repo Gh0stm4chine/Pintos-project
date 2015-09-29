@@ -20,29 +20,20 @@ void sys_halt(){
 }
 
 void sys_exit(int status){
-  printf("system exit!\n");
   struct thread *t = thread_current();
-  t->status = status;
+  t->metastatus = status;
+  printf("system exit!, %d \n", t->metastatus);
   thread_exit();
 }
   
 int sys_exec(const char *file){ // make return pid_t
   printf("system exec!, %s \n",file);
-  /* tid_t tid = process_execute(file);
-  enum intr_level level = intr_disable();
-  struct thread *t = thread_by_tid(tid);
-  intr_set_level(level);
-  if(tid != -1){
-    sema_down(&t->parent);
-    if(t->start)
-      return tid;
-      }*/
-  while(1){};
-  return -1;
+  return process_execute(file);
+  
 }
 
 int sys_wait (int pid){ // make argument pid_t
-  printf("system wait!\n");
+  printf("system wait!, %d \n", pid);
   return process_wait(pid);
 }
 
@@ -82,8 +73,8 @@ int sys_write (int fd, const void *buffer, unsigned size){
     putbuf((char*)(buffer), size);  
     return size;
   } 
-
-  printf("system write!\n");
+  
+  printf("system write! %d \n", fd);
   while(1){};
   thread_exit();
   return 0;
@@ -108,10 +99,11 @@ void sys_close (int fd){
 static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
+  hex_dump(f->esp, f->esp, 20, true);
   int sys_num = *((int*)(f->esp));
-  int arg0 = ((int*)(f->esp)+1);
-  int arg1 = ((int*)(f->esp)+2);
-  int arg2 = ((int*)(f->esp)+3);
+  int arg0 = *((int*)(f->esp)+1);
+  int arg1 = *((int*)(f->esp)+2);
+  int arg2 = *((int*)(f->esp)+3);
 
   switch(sys_num){
   case SYS_HALT:
@@ -127,6 +119,7 @@ syscall_handler (struct intr_frame *f UNUSED)
   case SYS_REMOVE:
     sys_remove((char*)arg0); break;
   case SYS_OPEN:
+
     sys_open((char*)arg0); break;
   case SYS_FILESIZE:
     sys_filesize(arg0); break;
