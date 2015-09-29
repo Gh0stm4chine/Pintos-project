@@ -5,6 +5,10 @@
 
 /* An open file. */
 struct file 
+    return size ;
+  } else {
+      if (t->fd[fdes] != NULL && fdes < 128 && fdes > 1) 
+	return file_read(t->fd[f
   {
     struct inode *inode;        /* File's inode. */
     off_t pos;                  /* Current position. */

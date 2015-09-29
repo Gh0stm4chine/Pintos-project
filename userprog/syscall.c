@@ -9,6 +9,7 @@
 #include "filesys/file.h"
 
 
+
 static void syscall_handler (struct intr_frame *);
 
 void
@@ -41,8 +42,12 @@ int sys_wait (int pid){ // make argument pid_t
 }
 
 bool sys_create (const char *file, unsigned initial_size){
-  //printf("system create!\n");
-  return filesys_create(file,initial_size);
+  //printf("system create!,file =  %s && size = %d\n",file,initial_size);
+  struct thread *t = thread_current();
+  if (file != NULL) 
+    return filesys_create(file,initial_size);
+  else
+    thread_exit();
 }
 
 bool sys_remove (const char *file){
@@ -52,18 +57,29 @@ bool sys_remove (const char *file){
 
 
 int sys_open (const char *file){
-  //printf("system open!\n");
+  //printf("system open!, file = '%s' \n", file);
   int i = 2 ; //reserve 0 & 1 for STDIN & STDOUT
   struct thread *t = thread_current();
   if (t->fd == NULL) {
-    t->fd = malloc(128*sizeof(struct file *));  
+    t->fd = malloc(128*sizeof(struct file *)); 
+    for(i = 2; i < 128; i++)
+      t->fd[i] = NULL;
   }
-  struct file *f = filesys_open(file);
-  while(t->fd[i] != NULL) {
-    i++;
-  }  
-  t->fd[i] = f;
-  return i ;
+  if (file != NULL) {
+    if(file[0] == NULL)
+      return -1;
+    struct file *f = filesys_open(file);
+    if(f == NULL)
+      return -1 ;
+    i = 2;
+    while(t->fd[i] != NULL) {
+      i++;
+    }  
+    t->fd[i] = f;
+    return i ;
+  } else {
+    thread_exit();
+  }
 }
 
 int sys_filesize (int fdes){
@@ -76,7 +92,7 @@ int sys_filesize (int fdes){
 }
 
 int sys_read (int fdes, void *buffer, unsigned size){
-  //printf("system read!\n");
+  //printf("system read!\n fd = %d && size = %d\n",fdes,size);
   struct thread *t = thread_current();
   if (fdes == 0) {
     //input_getc(fdes);
@@ -117,16 +133,21 @@ unsigned sys_tell (int fdes){
 }
 
 void sys_close (int fdes){
-  // printf("system close!\n");
+  //printf("system close!\n  fdes = %d \n",fdes);
+  if(fdes == 0 || fdes == 1) {
+    return ;    
+  }
   struct thread *t = thread_current();
-  if (t->fd[fdes] != NULL && fdes < 128 && fdes > 1) 
+  if (t->fd[fdes] != NULL && fdes < 128 && fdes > 1) {
+    file_close(t->fd[fdes]);
     t->fd[fdes] = NULL ;
+  }
 }
 
 static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
-  // hex_dump(f->esp, f->esp, 20, true);
+  //hex_dump(f->esp, f->esp, 20, true);
   int sys_num = *((int*)(f->esp));
   int arg0 = *((int*)(f->esp)+1);
   int arg1 = *((int*)(f->esp)+2);
@@ -142,9 +163,9 @@ syscall_handler (struct intr_frame *f UNUSED)
   case SYS_WAIT:
     f->eax = sys_wait(arg0); break;
   case SYS_CREATE:
-    sys_create((char*)arg0,(unsigned)arg1); break;
+    f->eax = sys_create((char*)arg0,(unsigned)arg1); break;
   case SYS_REMOVE:
-    sys_remove((char*)arg0); break;
+    f->eax = sys_remove((char*)arg0); break;
   case SYS_OPEN:
     f->eax = sys_open((char*)arg0); break;
   case SYS_FILESIZE:
