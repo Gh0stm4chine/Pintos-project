@@ -51,7 +51,7 @@ process_execute (const char *file_name)
     if(t->start){
       return tid;
     } else 
-      return -1;
+      return -1 ;
   }
 
   return tid;

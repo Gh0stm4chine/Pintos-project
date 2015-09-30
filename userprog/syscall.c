@@ -7,6 +7,7 @@
 #include "threads/init.h"
 #include "process.h"
 #include "filesys/file.h"
+#include "threads/vaddr.h"
 
 
 
@@ -94,14 +95,14 @@ int sys_filesize (int fdes){
 int sys_read (int fdes, void *buffer, unsigned size){
   //printf("system read!\n fd = %d && size = %d\n",fdes,size);
   struct thread *t = thread_current();
+  if (fdes ==1) 
+    thread_exit();
   if (fdes == 0) {
-    //input_getc(fdes);
     return size ;
   } else {
       if (t->fd[fdes] != NULL && fdes < 128 && fdes > 1) 
 	return file_read(t->fd[fdes],buffer,size);      
   }
-  return -1 ;
 }
 
 int sys_write (int fdes, const void *buffer, unsigned size){
@@ -147,32 +148,52 @@ void sys_close (int fdes){
 static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
+  //printf("esp = %x \n", f->esp); 
   //hex_dump(f->esp, f->esp, 20, true);
+  struct thread *t = thread_current();
+  if(is_user_vaddr(f->esp) && pagedir_get_page(t->pagedir,f->esp) == NULL)
+    thread_exit();  
   int sys_num = *((int*)(f->esp));
   int arg0 = *((int*)(f->esp)+1);
   int arg1 = *((int*)(f->esp)+2);
   int arg2 = *((int*)(f->esp)+3);
 
+
   switch(sys_num){
   case SYS_HALT:
     sys_halt(); break;
   case SYS_EXIT:
+    if(!is_user_vaddr((int*)(f->esp)+1) || pagedir_get_page(t->pagedir,(int*)(f->esp)+1) == NULL)
+      thread_exit(); 
+    //printf("arg0 = %x \n",(int*)(f->esp)+1);
     sys_exit(arg0); break;
   case SYS_EXEC:
+    if(!is_user_vaddr(arg0) || pagedir_get_page(t->pagedir,arg0) == NULL)
+      thread_exit(); 
     f->eax = sys_exec((char*)arg0); break;
   case SYS_WAIT:
     f->eax = sys_wait(arg0); break;
   case SYS_CREATE:
+    if(!is_user_vaddr(arg0) || pagedir_get_page(t->pagedir,arg0) == NULL)
+      thread_exit(); 
     f->eax = sys_create((char*)arg0,(unsigned)arg1); break;
   case SYS_REMOVE:
+    if(!is_user_vaddr(arg0) || pagedir_get_page(t->pagedir,arg0) == NULL)
+      thread_exit(); 
     f->eax = sys_remove((char*)arg0); break;
   case SYS_OPEN:
+    if(!is_user_vaddr(arg0) || pagedir_get_page(t->pagedir,arg0) == NULL)
+      thread_exit(); 
     f->eax = sys_open((char*)arg0); break;
   case SYS_FILESIZE:
     f->eax = sys_filesize(arg0); break;
   case SYS_READ:
+    if(!is_user_vaddr(arg1) || pagedir_get_page(t->pagedir,arg1) == NULL)
+      thread_exit(); 
     f->eax = sys_read(arg0,(void*)arg1,(unsigned)arg2); break;
   case SYS_WRITE:
+    if(!is_user_vaddr(arg1) || pagedir_get_page(t->pagedir,arg1) == NULL)
+      thread_exit(); 
     f->eax = sys_write(arg0,(void*)arg1,(unsigned)arg2); break;
   case SYS_SEEK:
     sys_seek(arg0,(unsigned)arg1); break;
