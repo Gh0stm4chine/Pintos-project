@@ -99,6 +99,7 @@ struct thread
     uint32_t *pagedir;                  /* Page directory. */
 #endif
 
+    struct file *f;
     int metastatus;
     bool start;
     struct semaphore parent;

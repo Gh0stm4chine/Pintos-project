@@ -34,7 +34,6 @@ void sys_exit(int status){
 int sys_exec(const char *file){ // make return pid_t
   //printf("system exec!, %s \n",file);
   return process_execute(file);
-  
 }
 
 int sys_wait (int pid){ // make argument pid_t
