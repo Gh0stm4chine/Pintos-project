@@ -51,6 +51,7 @@ process_execute (const char *file_name)
     if(t->start){
       return tid;
     } else 
+      sema_down(&t->parent);
       return -1 ;
   }
 
@@ -121,10 +122,8 @@ void
 process_exit (void)
 {
   struct thread *t = thread_current ();
-
-  printf("%s: exit(%d)\n", t->name, t->metastatus);
-  sema_up(&t->parent);
-  sema_down(&t->zombie);
+  if(t->start)
+    printf("%s: exit(%d)\n", t->name, t->metastatus);
 
   uint32_t *pd;
 

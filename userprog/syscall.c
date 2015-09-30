@@ -95,13 +95,15 @@ int sys_filesize (int fdes){
 int sys_read (int fdes, void *buffer, unsigned size){
   //printf("system read!\n fd = %d && size = %d\n",fdes,size);
   struct thread *t = thread_current();
-  if (fdes ==1) 
+  if (fdes == 1) 
     thread_exit();
   if (fdes == 0) {
     return size ;
   } else {
-      if (t->fd[fdes] != NULL && fdes < 128 && fdes > 1) 
-	return file_read(t->fd[fdes],buffer,size);      
+      if (fdes < 128 && fdes > 1 && t->fd[fdes] != NULL) 
+	return file_read(t->fd[fdes],buffer,size); 
+      else
+	thread_exit();
   }
 }
 
@@ -112,8 +114,10 @@ int sys_write (int fdes, const void *buffer, unsigned size){
     putbuf((char*)(buffer), size);  
     return size;
   } else {
-    if (t->fd[fdes] != NULL && fdes < 128 && fdes > 1)
+    if (fdes < 128 && fdes > 1 && t->fd[fdes] != NULL)
       return file_write(t->fd[fdes],buffer,size);
+    else
+      thread_exit();
   }
   return -1;
 }
@@ -139,9 +143,11 @@ void sys_close (int fdes){
     return ;    
   }
   struct thread *t = thread_current();
-  if (t->fd[fdes] != NULL && fdes < 128 && fdes > 1) {
+  if (fdes < 128 && fdes > 1 && t->fd[fdes] != NULL) {
     file_close(t->fd[fdes]);
     t->fd[fdes] = NULL ;
+  } else {
+    thread_exit();
   }
 }
 
