@@ -288,6 +288,7 @@ thread_tid (void)
 void
 thread_exit (void) 
 {
+  struct thread *t = thread_current();
   ASSERT (!intr_context ());
 
 #ifdef USERPROG
@@ -297,6 +298,8 @@ thread_exit (void)
   /* Remove thread from all threads list, set our status to dying,
      and schedule another process.  That process will destroy us
      when it calls thread_schedule_tail(). */
+  sema_up(&t->parent);
+  sema_down(&t->zombie);
   intr_disable ();
   list_remove (&thread_current()->allelem);
   thread_current ()->status = THREAD_DYING;
@@ -336,6 +339,7 @@ thread_by_tid (tid_t tid)
       if(t->tid == tid)
 	return t;
     }
+  return NULL ;
 }
 
 /* Invoke function 'func' on all threads, passing along 'aux'.

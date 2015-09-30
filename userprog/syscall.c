@@ -86,10 +86,10 @@ int sys_open (const char *file){
 int sys_filesize (int fdes){
   struct thread *t = thread_current();
   //printf("system filesize!\n");
-  if (t->fd[fdes] == NULL || fdes > 128 || fdes < 2)
-	  return -1 ;
-  else
+  if (fdes < 128 && fdes > 1 && t->fd != NULL && t->fd[fdes] != NULL)
     return file_length(t->fd[fdes]);
+  else
+    return -1;
 }
 
 int sys_read (int fdes, void *buffer, unsigned size){
@@ -100,7 +100,7 @@ int sys_read (int fdes, void *buffer, unsigned size){
   if (fdes == 0) {
     return size ;
   } else {
-      if (fdes < 128 && fdes > 1 && t->fd[fdes] != NULL) 
+      if (fdes < 128 && fdes > 1 && t->fd != NULL && t->fd[fdes] != NULL) 
 	return file_read(t->fd[fdes],buffer,size); 
       else
 	thread_exit();
@@ -114,7 +114,7 @@ int sys_write (int fdes, const void *buffer, unsigned size){
     putbuf((char*)(buffer), size);  
     return size;
   } else {
-    if (fdes < 128 && fdes > 1 && t->fd[fdes] != NULL)
+    if (fdes < 128 && fdes > 1 && t->fd != NULL && t->fd[fdes] != NULL)
       return file_write(t->fd[fdes],buffer,size);
     else
       thread_exit();
@@ -125,14 +125,14 @@ int sys_write (int fdes, const void *buffer, unsigned size){
 void sys_seek (int fdes, unsigned position){
   //printf("system seek!\n");
   struct thread *t = thread_current();
-  if (t->fd[fdes] != NULL && fdes < 128 && fdes > 1)
+  if (t->fd != NULL && fdes < 128 && fdes > 1 && t->fd[fdes] != NULL)
     file_seek(t->fd[fdes],position);
 }
 
 unsigned sys_tell (int fdes){
   //printf("system tell!\n");
   struct thread *t = thread_current();
-  if (t->fd[fdes] != NULL && fdes < 128 && fdes > 1)
+  if (t->fd != NULL && fdes < 128 && fdes > 1 && t->fd[fdes] != NULL)
     return file_tell(t->fd[fdes]);
   return -1 ;
 }
@@ -143,7 +143,7 @@ void sys_close (int fdes){
     return ;    
   }
   struct thread *t = thread_current();
-  if (fdes < 128 && fdes > 1 && t->fd[fdes] != NULL) {
+  if (fdes < 128 && fdes > 1 && t->fd != NULL && t->fd[fdes] != NULL) {
     file_close(t->fd[fdes]);
     t->fd[fdes] = NULL ;
   } else {
