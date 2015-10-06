@@ -7,7 +7,7 @@
 #include "threads/palloc.h"
 
 static uint32_t *active_pd (void);
-static void invalidate_pagedir (uint32_t *);
+//static void invalidate_pagedir (uint32_t *);
 
 /* Creates a new page directory that has mappings for kernel
    virtual addresses, but none for user virtual addresses.
@@ -251,7 +251,7 @@ active_pd (void)
    This function invalidates the TLB if PD is the active page
    directory.  (If PD is not active then its entries are not in
    the TLB, so there is no need to invalidate anything.) */
-static void
+void
 invalidate_pagedir (uint32_t *pd) 
 {
   if (active_pd () == pd) 

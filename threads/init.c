@@ -96,6 +96,7 @@ main (void)
 
   /* Initialize memory system. */
   palloc_init (user_page_limit);
+  //falloc_init (user_page_limit);
   malloc_init ();
   paging_init ();
 

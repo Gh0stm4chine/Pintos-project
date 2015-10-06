@@ -8,6 +8,7 @@
 #include "process.h"
 #include "filesys/file.h"
 #include "threads/vaddr.h"
+#include "threads/palloc.h"
 
 
 
@@ -193,8 +194,20 @@ syscall_handler (struct intr_frame *f UNUSED)
   case SYS_FILESIZE:
     f->eax = sys_filesize(arg0); break;
   case SYS_READ:
-    if(!is_user_vaddr(arg1) || pagedir_get_page(t->pagedir,arg1) == NULL)
-      thread_exit(); 
+    if(!is_user_vaddr(arg1))
+      thread_exit();
+    if(arg1 >= ((int)f->esp)-32){
+      int numPages = 0;
+      while(numPages*PGSIZE <= (unsigned)arg2 + PGSIZE){
+	if(pagedir_get_page(t->pagedir,arg1+numPages*PGSIZE) == NULL){
+	  uint8_t *kpage = palloc_get_page(PAL_USER | PAL_ZERO);
+	  install_page(pg_round_down((void*)(arg1+numPages*PGSIZE)), kpage, true);
+	  struct thread *t = thread_current();
+	  invalidate_pagedir(t->pagedir);
+	}
+	numPages += 1;
+      }
+    } else { thread_exit(); }
     f->eax = sys_read(arg0,(void*)arg1,(unsigned)arg2); break;
   case SYS_WRITE:
     if(!is_user_vaddr(arg1) || pagedir_get_page(t->pagedir,arg1) == NULL)
