@@ -4,7 +4,17 @@
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
+#include "filesys/filesys.h"
 #include "synch.h"
+
+struct segment{
+  struct file *file;
+  off_t ofs;
+  uint8_t* upage;
+  uint32_t read_bytes;
+  uint32_t zero_bytes;
+  bool writable;
+};
 
 /* States in a thread's life cycle. */
 enum thread_status
@@ -105,6 +115,9 @@ struct thread
     struct semaphore parent;
     struct semaphore zombie;
     struct file **fd;
+
+    int segnum;
+    struct segment segment_table[3];
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */

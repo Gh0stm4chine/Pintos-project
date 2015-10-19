@@ -154,22 +154,49 @@ page_fault (struct intr_frame *f)
   /* To implement virtual memory, delete the rest of the function
      body, and replace it with code that brings in the page to
      which fault_addr refers. */
+  struct thread *t = thread_current();
   if((int)fault_addr >= ((int)f->esp)-32 && f->error_code == 6){
-    //printf("Handle this case\n");
+    printf("growing stack, %x, %x\n", fault_addr, ((unsigned)f->esp)-32);
     uint8_t *kpage = palloc_get_page(PAL_USER | PAL_ZERO);
     install_page(pg_round_down(fault_addr), kpage, true);
-    struct thread *t = thread_current();
     invalidate_pagedir(t->pagedir);
     return;
   }
-  if(f->error_code == 3)
+  
+  int i;
+  struct segment seg;
+  for(i=0; i<3; i++){
+    seg = t->segment_table[i];
+    if(seg.upage <= fault_addr && fault_addr <= seg.upage + seg.read_bytes + seg.zero_bytes && f->error_code == 4){
+      uint8_t *kpage = palloc_get_page(PAL_USER | PAL_ZERO);
+      
+      if(pg_round_down(fault_addr) < seg.upage){
+	file_read_at(seg.file, kpage,(uint8_t*)pg_round_up(seg.upage)-seg.upage, seg.ofs);
+      } else if(pg_round_up(fault_addr) > seg.upage + seg.read_bytes){
+	file_read_at(seg.file, kpage, seg.upage+seg.read_bytes-(uint8_t*)pg_round_down(fault_addr), seg.ofs+(uint8_t*)pg_round_down(fault_addr)-seg.upage);
+      } else{
+	file_read_at(seg.file, kpage, PGSIZE, seg.ofs+(uint8_t*)pg_round_down(fault_addr)-seg.upage);
+      }
+      
+      //printf("set page at %x, %x, %x, %d, %d \n", pg_round_down(fault_addr),fault_addr,kpage,seg.writable,f->error_code);
+      pagedir_set_page(t->pagedir, pg_round_down(fault_addr), kpage, seg.writable);
+      invalidate_pagedir(t->pagedir);
+      return;
+    } 
+  }
+
+  //if(f->error_code == 3 || f->error_code == 7){
+    //printf("error = 3\n");
     thread_exit();
+    // }
 
   printf ("Page fault at %p: %s error %s page in %s context.\n",
           fault_addr,
           not_present ? "not present" : "rights violation",
           write ? "writing" : "reading",
           user ? "user" : "kernel");
+
+  thread_exit();
   
   kill (f);
 }

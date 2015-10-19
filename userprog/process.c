@@ -464,22 +464,31 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
   ASSERT ((read_bytes + zero_bytes) % PGSIZE == 0);
   ASSERT (pg_ofs (upage) == 0);
   ASSERT (ofs % PGSIZE == 0);
+  
+  struct thread* t = thread_current();
+  
+  //printf("saving segment %x, %x, %d\n", upage, pg_round_down(upage), writable);
+  t->segment_table[t->segnum] = (struct segment){file, ofs, upage, read_bytes, zero_bytes, writable}; 
+  t->segnum += 1;
 
-  file_seek (file, ofs);
+  return true;
+}
+
+/*file_seek (file, ofs);
   while (read_bytes > 0 || zero_bytes > 0) 
     {
       /* Calculate how to fill this page.
          We will read PAGE_READ_BYTES bytes from FILE
-         and zero the final PAGE_ZERO_BYTES bytes. */
+         and zero the final PAGE_ZERO_BYTES bytes. *
       size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
 
-      /* Get a page of memory. */
+      /* Get a page of memory. *
       uint8_t *kpage = palloc_get_page (PAL_USER);
       if (kpage == NULL)
         return false;
 
-      /* Load this page. */
+      /* Load this page. *
       if (file_read (file, kpage, page_read_bytes) != (int) page_read_bytes)
         {
           palloc_free_page (kpage);
@@ -487,20 +496,19 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
         }
       memset (kpage + page_read_bytes, 0, page_zero_bytes);
 
-      /* Add the page to the process's address space. */
+      /* Add the page to the process's address space. *
       if (!install_page (upage, kpage, writable)) 
         {
           palloc_free_page (kpage);
           return false; 
         }
 
-      /* Advance. */
+      /* Advance. *
       read_bytes -= page_read_bytes;
       zero_bytes -= page_zero_bytes;
       upage += PGSIZE;
     }
-  return true;
-}
+*/
 
 /* Create a minimal stack by mapping a zeroed page at the top of
    user virtual memory. */

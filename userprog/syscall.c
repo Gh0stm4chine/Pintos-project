@@ -155,7 +155,7 @@ static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
   //printf("esp = %x \n", f->esp); 
-  //hex_dump(f->esp, f->esp, 20, true);
+  hex_dump(f->esp, f->esp, 20, true);
   struct thread *t = thread_current();
   if(is_user_vaddr(f->esp) && pagedir_get_page(t->pagedir,f->esp) == NULL)
     thread_exit();  
@@ -198,7 +198,8 @@ syscall_handler (struct intr_frame *f UNUSED)
       thread_exit();
     if(arg1 >= ((int)f->esp)-32){
       int numPages = 0;
-      while(numPages*PGSIZE <= (unsigned)arg2 + PGSIZE){
+      while(numPages*PGSIZE <= (unsigned)arg2){//+ PGSIZE){
+	//printf("check %x\n", arg1+numPages*PGSIZE);
 	if(pagedir_get_page(t->pagedir,arg1+numPages*PGSIZE) == NULL){
 	  uint8_t *kpage = palloc_get_page(PAL_USER | PAL_ZERO);
 	  install_page(pg_round_down((void*)(arg1+numPages*PGSIZE)), kpage, true);
@@ -207,8 +208,38 @@ syscall_handler (struct intr_frame *f UNUSED)
 	}
 	numPages += 1;
       }
-    } else { thread_exit(); }
-    f->eax = sys_read(arg0,(void*)arg1,(unsigned)arg2); break;
+      f->eax = sys_read(arg0,(void*)arg1,(unsigned)arg2); break;
+    }
+    
+
+    /*int i;
+    struct segment seg;
+    for(i=0; i<3; i++){
+      seg = t->segment_table[i];
+      if(seg.upage <= (void*)(arg1) && (void*)(arg1) <= seg.upage + seg.read_bytes + seg.zero_bytes){
+	int numPages = 0;
+	while(numPages*PGSIZE <= (unsigned)arg2 + PGSIZE){
+	  uint8_t *kpage = palloc_get_page(PAL_USER | PAL_ZERO);
+	
+	  if(pg_round_down((void*)(arg1+numPages*PGSIZE)) < seg.upage){
+	    file_read_at(seg.file, kpage,(uint8_t*)pg_round_up(seg.upage)-seg.upage, seg.ofs);
+	  } else if(pg_round_up((void*)(arg1+numPages*PGSIZE)) > seg.upage + seg.read_bytes){
+	    file_read_at(seg.file, kpage, seg.upage+seg.read_bytes-(uint8_t*)pg_round_down((void*)(arg1+numPages*PGSIZE)), seg.ofs+(uint8_t*)pg_round_down((void*)(arg1+numPages*PGSIZE))-seg.upage);
+	  } else{
+	    file_read_at(seg.file, kpage, PGSIZE, seg.ofs+(uint8_t*)pg_round_down((void*)(arg1+numPages*PGSIZE))-seg.upage);
+	  }
+	
+	  printf("set page at %x, %x, %x, %d, %d \n", pg_round_down((void*)(arg1+numPages*PGSIZE)),(void*)(arg1+numPages*PGSIZE),kpage,seg.writable);
+	  pagedir_set_page(t->pagedir, pg_round_down((void*)(arg1+numPages*PGSIZE)), kpage, seg.writable);
+	  numPages += 1;
+	}
+	invalidate_pagedir(t->pagedir);
+	
+	f->eax = sys_read(arg0,(void*)arg1,(unsigned)arg2); break;
+      } 
+      }*/
+      
+    thread_exit();
   case SYS_WRITE:
     if(!is_user_vaddr(arg1) || pagedir_get_page(t->pagedir,arg1) == NULL)
       thread_exit(); 

@@ -1,6 +1,11 @@
 #include "threads/palloc.h"
 
-static struct list frame_table;
+struct frame_table
+{
+  struct lock lock;
+  struct bitmap *used_map;
+  uint8_t *base;
+};
 
 void falloc_init(size_t frame_limit){}
 
