@@ -20,6 +20,7 @@ static void page_fault (struct intr_frame *);
    In a real Unix-like OS, most of these interrupts would be
    passed along to the user process in the form of signals, as
    described in [SV-386] 3-24 and 3-25, but we don't implement
+    printf("breaking here\n");
    signals.  Instead, we'll make them simply kill the user
    process.
 
@@ -155,8 +156,8 @@ page_fault (struct intr_frame *f)
      body, and replace it with code that brings in the page to
      which fault_addr refers. */
   struct thread *t = thread_current();
-  if((int)fault_addr >= ((int)f->esp)-32 && f->error_code == 6){
-    printf("growing stack, %x, %x\n", fault_addr, ((unsigned)f->esp)-32);
+  if((int)fault_addr >= ((int)f->esp)-32 && f->error_code == 6 && (int)fault_addr != 0){
+    //printf("growing stack, %x, %x\n", fault_addr, ((unsigned)f->esp)-32);
     uint8_t *kpage = palloc_get_page(PAL_USER | PAL_ZERO);
     install_page(pg_round_down(fault_addr), kpage, true);
     invalidate_pagedir(t->pagedir);

@@ -211,7 +211,6 @@ syscall_handler (struct intr_frame *f UNUSED)
       f->eax = sys_read(arg0,(void*)arg1,(unsigned)arg2); break;
     }
     
-    printf("breaking here\n");
     /*int i;
     struct segment seg;
     for(i=0; i<3; i++){
