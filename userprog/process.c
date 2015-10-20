@@ -467,7 +467,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
   
   struct thread* t = thread_current();
   
-  //printf("saving segment %x, %x, %d\n", upage, pg_round_down(upage), writable);
+  //printf("saving segment %x, %x, %d, %d\n", upage, pg_round_down(upage), read_bytes+zero_bytes,writable);
   t->segment_table[t->segnum] = (struct segment){file, ofs, upage, read_bytes, zero_bytes, writable}; 
   t->segnum += 1;
 

@@ -5,6 +5,8 @@
 #include "threads/init.h"
 #include "threads/pte.h"
 #include "threads/palloc.h"
+#include "threads/thread.h"
+#include "vm/frame.h"
 
 static uint32_t *active_pd (void);
 //static void invalidate_pagedir (uint32_t *);
@@ -103,6 +105,8 @@ pagedir_set_page (uint32_t *pd, void *upage, void *kpage, bool writable)
   ASSERT (pg_ofs (upage) == 0);
   ASSERT (pg_ofs (kpage) == 0);
   ASSERT (is_user_vaddr (upage));
+  if(!is_kernel_vaddr(kpage))
+    printf("error %x \n",kpage);
   ASSERT (vtop (kpage) >> PTSHIFT < init_ram_pages);
   ASSERT (pd != init_page_dir);
 
@@ -112,6 +116,7 @@ pagedir_set_page (uint32_t *pd, void *upage, void *kpage, bool writable)
     {
       ASSERT ((*pte & PTE_P) == 0);
       *pte = pte_create_user (kpage, writable);
+      frame_update(thread_current()->tid, pd, upage, kpage, writable);
       return true;
     }
   else

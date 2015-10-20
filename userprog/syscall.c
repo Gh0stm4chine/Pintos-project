@@ -171,7 +171,6 @@ syscall_handler (struct intr_frame *f UNUSED)
   case SYS_EXIT:
     if(!is_user_vaddr((int*)(f->esp)+1) || pagedir_get_page(t->pagedir,(int*)(f->esp)+1) == NULL)
       thread_exit(); 
-    //printf("arg0 = %x \n",(int*)(f->esp)+1);
     sys_exit(arg0); break;
   case SYS_EXEC:
     if(!is_user_vaddr(arg0) || pagedir_get_page(t->pagedir,arg0) == NULL)
@@ -196,10 +195,10 @@ syscall_handler (struct intr_frame *f UNUSED)
   case SYS_READ:
     if(!is_user_vaddr(arg1))
       thread_exit();
-    if(arg1 >= ((int)f->esp)-32){
+    if((unsigned)arg1 >= (unsigned)(f->esp)-32){
       int numPages = 0;
-      while(numPages*PGSIZE <= (unsigned)arg2){//+ PGSIZE){
-	//printf("check %x\n", arg1+numPages*PGSIZE);
+      //printf("growing stack in syscall %x, %x, %d\n", arg1, f->esp, arg2);
+      while(numPages*PGSIZE <= pg_round_down(arg1+arg2)-pg_round_down(arg1)){
 	if(pagedir_get_page(t->pagedir,arg1+numPages*PGSIZE) == NULL){
 	  uint8_t *kpage = palloc_get_page(PAL_USER | PAL_ZERO);
 	  install_page(pg_round_down((void*)(arg1+numPages*PGSIZE)), kpage, true);
@@ -211,33 +210,34 @@ syscall_handler (struct intr_frame *f UNUSED)
       f->eax = sys_read(arg0,(void*)arg1,(unsigned)arg2); break;
     }
     
-    printf("breaking here\n");
-    /*int i;
+    int i;
     struct segment seg;
     for(i=0; i<3; i++){
       seg = t->segment_table[i];
       if(seg.upage <= (void*)(arg1) && (void*)(arg1) <= seg.upage + seg.read_bytes + seg.zero_bytes){
 	int numPages = 0;
 	while(numPages*PGSIZE <= (unsigned)arg2 + PGSIZE){
-	  uint8_t *kpage = palloc_get_page(PAL_USER | PAL_ZERO);
-	
-	  if(pg_round_down((void*)(arg1+numPages*PGSIZE)) < seg.upage){
-	    file_read_at(seg.file, kpage,(uint8_t*)pg_round_up(seg.upage)-seg.upage, seg.ofs);
-	  } else if(pg_round_up((void*)(arg1+numPages*PGSIZE)) > seg.upage + seg.read_bytes){
-	    file_read_at(seg.file, kpage, seg.upage+seg.read_bytes-(uint8_t*)pg_round_down((void*)(arg1+numPages*PGSIZE)), seg.ofs+(uint8_t*)pg_round_down((void*)(arg1+numPages*PGSIZE))-seg.upage);
-	  } else{
-	    file_read_at(seg.file, kpage, PGSIZE, seg.ofs+(uint8_t*)pg_round_down((void*)(arg1+numPages*PGSIZE))-seg.upage);
+	  if(pagedir_get_page(t->pagedir,arg1+numPages*PGSIZE) == NULL){
+	    uint8_t *kpage = palloc_get_page(PAL_USER | PAL_ZERO);
+	    
+	    if(pg_round_down((void*)(arg1+numPages*PGSIZE)) < seg.upage){
+	      file_read_at(seg.file, kpage,(uint8_t*)pg_round_up(seg.upage)-seg.upage, seg.ofs);
+	    } else if(pg_round_up((void*)(arg1+numPages*PGSIZE)) > seg.upage + seg.read_bytes){
+	      file_read_at(seg.file, kpage, seg.upage+seg.read_bytes-(uint8_t*)pg_round_down((void*)(arg1+numPages*PGSIZE)), seg.ofs+(uint8_t*)pg_round_down((void*)(arg1+numPages*PGSIZE))-seg.upage);
+	    } else{
+	      file_read_at(seg.file, kpage, PGSIZE, seg.ofs+(uint8_t*)pg_round_down((void*)(arg1+numPages*PGSIZE))-seg.upage);
+	    }
+	    
+	    //printf("set page in syscall at %x, %x, %x, %d \n", pg_round_down((void*)(arg1+numPages*PGSIZE)),(void*)(arg1+numPages*PGSIZE),kpage,seg.writable);
+	    pagedir_set_page(t->pagedir, pg_round_down((void*)(arg1+numPages*PGSIZE)), kpage, seg.writable);
 	  }
-	
-	  printf("set page at %x, %x, %x, %d, %d \n", pg_round_down((void*)(arg1+numPages*PGSIZE)),(void*)(arg1+numPages*PGSIZE),kpage,seg.writable);
-	  pagedir_set_page(t->pagedir, pg_round_down((void*)(arg1+numPages*PGSIZE)), kpage, seg.writable);
 	  numPages += 1;
 	}
 	invalidate_pagedir(t->pagedir);
 	
-	f->eax = sys_read(arg0,(void*)arg1,(unsigned)arg2); break;
+	f->eax = sys_read(arg0,(void*)arg1,(unsigned)arg2); return;
       } 
-      }*/
+    }
       
     thread_exit();
   case SYS_WRITE:

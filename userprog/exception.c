@@ -156,7 +156,7 @@ page_fault (struct intr_frame *f)
      body, and replace it with code that brings in the page to
      which fault_addr refers. */
   struct thread *t = thread_current();
-  if((int)fault_addr >= ((int)f->esp)-32 && f->error_code == 6 && (int)fault_addr != 0){
+  if((unsigned)fault_addr >= ((unsigned)f->esp)-32 && f->error_code == 6 && (int)fault_addr != 0){
     //printf("growing stack, %x, %x\n", fault_addr, ((unsigned)f->esp)-32);
     uint8_t *kpage = palloc_get_page(PAL_USER | PAL_ZERO);
     install_page(pg_round_down(fault_addr), kpage, true);
@@ -168,7 +168,7 @@ page_fault (struct intr_frame *f)
   struct segment seg;
   for(i=0; i<3; i++){
     seg = t->segment_table[i];
-    if(seg.upage <= fault_addr && fault_addr <= seg.upage + seg.read_bytes + seg.zero_bytes && f->error_code == 4){
+    if(seg.upage <= fault_addr && fault_addr <= seg.upage + seg.read_bytes + seg.zero_bytes && (f->error_code == 4 || f->error_code == 6)){
       uint8_t *kpage = palloc_get_page(PAL_USER | PAL_ZERO);
       
       if(pg_round_down(fault_addr) < seg.upage){
@@ -188,14 +188,16 @@ page_fault (struct intr_frame *f)
 
   //if(f->error_code == 3 || f->error_code == 7){
     //printf("error = 3\n");
-    thread_exit();
+  thread_exit();
     // }
 
-  printf ("Page fault at %p: %s error %s page in %s context.\n",
+  printf ("Page fault at %p: %s error %s page in %s context. Stack pointer: %p, %d\n",
           fault_addr,
           not_present ? "not present" : "rights violation",
           write ? "writing" : "reading",
-          user ? "user" : "kernel");
+          user ? "user" : "kernel",
+	  f->esp,
+	  f->error_code);
 
   thread_exit();
   

@@ -1,26 +1,66 @@
 #include "threads/palloc.h"
+#include "threads/malloc.h"
+#include <stdio.h>
+#include "threads/thread.h"
+#include "threads/synch.h"
+#include "vm/frame.h"
+#include <stdio.h>
+#include "threads/thread.h"
+#include "threads/synch.h"
+#include "vm/frame.h"
 
-struct frame_table
+struct
 {
   struct lock lock;
-  struct bitmap *used_map;
-  uint8_t *base;
-};
+  int size;
+  struct frame** frames;
+} frame_table;
 
-void falloc_init(size_t frame_limit){}
 
-static void *falloc_get_frame(enum palloc_flags flags){
-  return palloc_get_page(flags);
+void frames_init(size_t frame_limit){
+  frame_table.frames = malloc(sizeof(struct frame *)*frame_limit);
+  frame_table.size = frame_limit;
+  int i;
+  for(i=0; i<frame_limit; i++){
+    frame_table.frames[i] = malloc(sizeof(struct frame));
+    frame_table.frames[i]->free = 1;
+  }
 }
 
-static void falloc_free_frame(void *page){
-  palloc_free_page(page);
+void* frame_evict(void){
+  struct frame f = *frame_table.frames[0];
+  printf("evict a frame, %d, %x, %x, %x, %d, %d \n", f.tid, f.pd, f.upage, f.kpage, f.writable, f.free);
+  thread_exit();
 }
 
-static void 
+void frame_set(void *page){
+  int i;
+  for(i=0; i<frame_table.size; i++){
+    if(frame_table.frames[i]->free == 1){
+      frame_table.frames[i]->kpage = page;
+      frame_table.frames[i]->upage = NULL;
+      frame_table.frames[i]->free = 0;
+    }
+  }
+}
 
-// addr = palloc_get_page(PAL_USER);
-// if(addr == NULL)
-//   switchPage();
+void frame_update(int tid, uint32_t *pd, void *upage, void *kpage, int writable){
+  int i = 0;
+  for(i=0; i<frame_table.size; i++){
+    if(frame_table.frames[i]->kpage == kpage){
+      *frame_table.frames[i] = (struct frame){tid, pd, upage, kpage, writable, free};
+    }
+  }
+}
+
+void frame_free(void *page){
+  int i = 0;
+  for(i=0; i<frame_table.size; i++){
+    if(frame_table.frames[i]->kpage == page){
+      frame_table.frames[i]->free = 1;
+      break;
+    }
+  }
+}
 
 
