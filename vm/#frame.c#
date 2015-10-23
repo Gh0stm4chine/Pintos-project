@@ -27,7 +27,7 @@ void frames_init(size_t frame_limit){
 
 void* frame_evict(void){
   if(lock_held_by_current_thread (&frame_table.lock))
-    printf("already locked swap\n");
+    printf("already locked frame\n");
   lock_acquire(&frame_table.lock);
   int i = frame_table.clock+1;
   int done = 0;

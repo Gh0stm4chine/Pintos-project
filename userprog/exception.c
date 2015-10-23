@@ -7,6 +7,7 @@
 #include "threads/vaddr.h"
 #include "threads/palloc.h"
 #include "userprog/process.h"
+#include "vm/swap.h"
 
 /* Number of page faults processed. */
 static long long page_fault_cnt;
@@ -157,13 +158,16 @@ page_fault (struct intr_frame *f)
      which fault_addr refers. */
   struct thread *t = thread_current();
   if((unsigned)fault_addr >= ((unsigned)f->esp)-32 && f->error_code == 6 && (int)fault_addr != 0){
-    //printf("growing stack, %x, %x\n", fault_addr, ((unsigned)f->esp)-32);
+    //printf("growing stack, %x, %x ... ", fault_addr, ((unsigned)f->esp)-32);
     uint8_t *kpage = palloc_get_page(PAL_USER | PAL_ZERO);
     install_page(pg_round_down(fault_addr), kpage, true);
     invalidate_pagedir(t->pagedir);
     return;
   }
   
+  if(swap_get(fault_addr, t))
+    return;
+
   int i;
   struct segment seg;
   for(i=0; i<3; i++){
@@ -178,8 +182,11 @@ page_fault (struct intr_frame *f)
       } else{
 	file_read_at(seg.file, kpage, PGSIZE, seg.ofs+(uint8_t*)pg_round_down(fault_addr)-seg.upage);
       }
-      
-      //printf("set page at %x, %x, %x, %d, %d \n", pg_round_down(fault_addr),fault_addr,kpage,seg.writable,f->error_code);
+      //if(t->tid == 4){
+      //printf("set page at %d | %x, %x, %x, %d, %d \n", t->tid, pg_round_down(fault_addr),fault_addr,kpage,seg.writable,f->error_code);
+      //if(0x80a2000 <= fault_addr && fault_addr <= 0x80a3000)
+      //hex_dump(kpage,kpage,16,0);
+      //}
       pagedir_set_page(t->pagedir, pg_round_down(fault_addr), kpage, seg.writable);
       invalidate_pagedir(t->pagedir);
       return;
@@ -191,11 +198,12 @@ page_fault (struct intr_frame *f)
   thread_exit();
     // }
 
-  printf ("Page fault at %p: %s error %s page in %s context. Stack pointer: %p, %d\n",
+  printf ("Page fault at %p: %s error %s page in %s context. %d | Stack pointer: %p, %d\n",
           fault_addr,
           not_present ? "not present" : "rights violation",
           write ? "writing" : "reading",
           user ? "user" : "kernel",
+	  t->tid,
 	  f->esp,
 	  f->error_code);
 

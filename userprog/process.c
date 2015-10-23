@@ -18,6 +18,7 @@
 #include "threads/thread.h"
 #include "threads/vaddr.h"
 #include "threads/synch.h"
+#include "vm/frame.h"
 
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
@@ -109,8 +110,9 @@ process_wait (tid_t child_tid UNUSED)
   enum intr_level level = intr_disable();
   struct thread *t = thread_by_tid(child_tid);
   intr_set_level(level);
-  if(t == NULL)
+  if(t == NULL){
     return -1;
+  }
   sema_down(&t->parent);
   int status = t->metastatus;
   sema_up(&t->zombie);
@@ -139,6 +141,8 @@ process_exit (void)
          directory before destroying the process's page
          directory, or our active page directory will be one
          that's been freed (and cleared). */
+      
+      //frame_free_tid(t->tid);
       t->pagedir = NULL;
       pagedir_activate (NULL);
       pagedir_destroy (pd);

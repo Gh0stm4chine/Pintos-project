@@ -116,7 +116,7 @@ pagedir_set_page (uint32_t *pd, void *upage, void *kpage, bool writable)
     {
       ASSERT ((*pte & PTE_P) == 0);
       *pte = pte_create_user (kpage, writable);
-      frame_update(thread_current()->tid, pd, upage, kpage, writable);
+      frame_update(thread_current(), upage, kpage, writable);
       return true;
     }
   else
@@ -168,6 +168,8 @@ pagedir_clear_page (uint32_t *pd, void *upage)
 bool
 pagedir_is_dirty (uint32_t *pd, const void *vpage) 
 {
+  if(pd == NULL)
+    return 1;
   uint32_t *pte = lookup_page (pd, vpage, false);
   return pte != NULL && (*pte & PTE_D) != 0;
 }
@@ -177,6 +179,8 @@ pagedir_is_dirty (uint32_t *pd, const void *vpage)
 void
 pagedir_set_dirty (uint32_t *pd, const void *vpage, bool dirty) 
 {
+  if(pd == NULL)
+    return;
   uint32_t *pte = lookup_page (pd, vpage, false);
   if (pte != NULL) 
     {
@@ -197,6 +201,8 @@ pagedir_set_dirty (uint32_t *pd, const void *vpage, bool dirty)
 bool
 pagedir_is_accessed (uint32_t *pd, const void *vpage) 
 {
+  if(pd == NULL)
+    return 1;
   uint32_t *pte = lookup_page (pd, vpage, false);
   return pte != NULL && (*pte & PTE_A) != 0;
 }
@@ -206,6 +212,8 @@ pagedir_is_accessed (uint32_t *pd, const void *vpage)
 void
 pagedir_set_accessed (uint32_t *pd, const void *vpage, bool accessed) 
 {
+  if(pd == NULL)
+    return;
   uint32_t *pte = lookup_page (pd, vpage, false);
   if (pte != NULL) 
     {

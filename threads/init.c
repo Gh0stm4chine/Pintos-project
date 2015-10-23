@@ -23,6 +23,7 @@
 #include "threads/pte.h"
 #include "threads/thread.h"
 #include "vm/frame.h"
+#include "vm/swap.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #include "userprog/exception.h"
@@ -100,8 +101,7 @@ main (void)
   malloc_init ();
   paging_init ();
   frames_init (init_ram_pages/2);
-  //swap_init ((int)block_size(block_get_role(BLOCK_SWAP)));
-
+  
   /* Segmentation. */
 #ifdef USERPROG
   tss_init ();
@@ -128,6 +128,7 @@ main (void)
   ide_init ();
   locate_block_devices ();
   filesys_init (format_filesys);
+  swap_init ();
 #endif
 
   printf ("Boot complete.\n");

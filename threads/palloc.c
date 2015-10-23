@@ -112,10 +112,12 @@ void *
 palloc_get_page (enum palloc_flags flags) 
 {
   void * page = palloc_get_multiple (flags, 1);
-  if(page == NULL && flags & PAL_USER)
+  if(page == NULL && flags & PAL_USER){
     return frame_evict();
-  if(flags & PAL_USER)
+  }
+  if(flags & PAL_USER){
     frame_set(page);
+  }
   return page;
 }
 
@@ -151,8 +153,8 @@ palloc_free_multiple (void *pages, size_t page_cnt)
 void
 palloc_free_page (void *page) 
 {
-  palloc_free_multiple (page, 1);
   frame_free(page);
+  palloc_free_multiple (page, 1);
 }
 
 /* Initializes pool P as starting at START and ending at END,
