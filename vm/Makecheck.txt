@@ -1,0 +1,58 @@
+cd build && make check
+make[1]: Entering directory `/home/ee379k/Desktop/pintos/vm/build'
+echo c | ../../utils/pintos -v -k -T 60 --bochs  --filesys-size=2 -p tests/userprog/exec-once -a exec-once -p tests/userprog/child-simple -a child-simple --swap-size=4 -- -q  -f run exec-once 2> tests/userprog/exec-once.errors > tests/userprog/exec-once.output
+perl -I../.. ../../tests/userprog/exec-once.ck tests/userprog/exec-once tests/userprog/exec-once.result
+pass tests/userprog/exec-once
+echo c | ../../utils/pintos -v -k -T 60 --bochs  --filesys-size=2 -p tests/userprog/exec-arg -a exec-arg -p tests/userprog/child-args -a child-args --swap-size=4 -- -q  -f run exec-arg 2> tests/userprog/exec-arg.errors > tests/userprog/exec-arg.output
+perl -I../.. ../../tests/userprog/exec-arg.ck tests/userprog/exec-arg tests/userprog/exec-arg.result
+pass tests/userprog/exec-arg
+echo c | ../../utils/pintos -v -k -T 60 --bochs  --filesys-size=2 -p tests/userprog/exec-multiple -a exec-multiple -p tests/userprog/child-simple -a child-simple --swap-size=4 -- -q  -f run exec-multiple 2> tests/userprog/exec-multiple.errors > tests/userprog/exec-multiple.output
+perl -I../.. ../../tests/userprog/exec-multiple.ck tests/userprog/exec-multiple tests/userprog/exec-multiple.result
+pass tests/userprog/exec-multiple
+echo c | ../../utils/pintos -v -k -T 60 --bochs  --filesys-size=2 -p tests/userprog/exec-missing -a exec-missing --swap-size=4 -- -q  -f run exec-missing 2> tests/userprog/exec-missing.errors > tests/userprog/exec-missing.output
+perl -I../.. ../../tests/userprog/exec-missing.ck tests/userprog/exec-missing tests/userprog/exec-missing.result
+pass tests/userprog/exec-missing
+echo c | ../../utils/pintos -v -k -T 60 --bochs  --filesys-size=2 -p tests/userprog/exec-bad-ptr -a exec-bad-ptr --swap-size=4 -- -q  -f run exec-bad-ptr 2> tests/userprog/exec-bad-ptr.errors > tests/userprog/exec-bad-ptr.output
+perl -I../.. ../../tests/userprog/exec-bad-ptr.ck tests/userprog/exec-bad-ptr tests/userprog/exec-bad-ptr.result
+pass tests/userprog/exec-bad-ptr
+echo c | ../../utils/pintos -v -k -T 60 --bochs  --filesys-size=2 -p tests/userprog/wait-simple -a wait-simple -p tests/userprog/child-simple -a child-simple --swap-size=4 -- -q  -f run wait-simple 2> tests/userprog/wait-simple.errors > tests/userprog/wait-simple.output
+perl -I../.. ../../tests/userprog/wait-simple.ck tests/userprog/wait-simple tests/userprog/wait-simple.result
+pass tests/userprog/wait-simple
+echo c | ../../utils/pintos -v -k -T 60 --bochs  --filesys-size=2 -p tests/userprog/wait-twice -a wait-twice -p tests/userprog/child-simple -a child-simple --swap-size=4 -- -q  -f run wait-twice 2> tests/userprog/wait-twice.errors > tests/userprog/wait-twice.output
+perl -I../.. ../../tests/userprog/wait-twice.ck tests/userprog/wait-twice tests/userprog/wait-twice.result
+pass tests/userprog/wait-twice
+echo c | ../../utils/pintos -v -k -T 60 --bochs  --filesys-size=2 -p tests/userprog/wait-killed -a wait-killed -p tests/userprog/child-bad -a child-bad --swap-size=4 -- -q  -f run wait-killed 2> tests/userprog/wait-killed.errors > tests/userprog/wait-killed.output
+perl -I../.. ../../tests/userprog/wait-killed.ck tests/userprog/wait-killed tests/userprog/wait-killed.result
+pass tests/userprog/wait-killed
+echo c | ../../utils/pintos -v -k -T 60 --bochs  --filesys-size=2 -p tests/userprog/wait-bad-pid -a wait-bad-pid --swap-size=4 -- -q  -f run wait-bad-pid 2> tests/userprog/wait-bad-pid.errors > tests/userprog/wait-bad-pid.output
+perl -I../.. ../../tests/userprog/wait-bad-pid.ck tests/userprog/wait-bad-pid tests/userprog/wait-bad-pid.result
+pass tests/userprog/wait-bad-pid
+echo c | ../../utils/pintos -v -k -T 60 --bochs  --filesys-size=2 -p tests/userprog/multi-recurse -a multi-recurse --swap-size=4 -- -q  -f run 'multi-recurse 15' 2> tests/userprog/multi-recurse.errors > tests/userprog/multi-recurse.output
+perl -I../.. ../../tests/userprog/multi-recurse.ck tests/userprog/multi-recurse tests/userprog/multi-recurse.result
+pass tests/userprog/multi-recurse
+echo c | ../../utils/pintos -v -k -T 60 --bochs  --filesys-size=2 -p tests/userprog/multi-child-fd -a multi-child-fd -p ../../tests/userprog/sample.txt -a sample.txt -p tests/userprog/child-close -a child-close --swap-size=4 -- -q  -f run multi-child-fd 2> tests/userprog/multi-child-fd.errors > tests/userprog/multi-child-fd.output
+perl -I../.. ../../tests/userprog/multi-child-fd.ck tests/userprog/multi-child-fd tests/userprog/multi-child-fd.result
+pass tests/userprog/multi-child-fd
+echo c | ../../utils/pintos -v -k -T 60 --bochs  --filesys-size=2 -p tests/userprog/rox-simple -a rox-simple --swap-size=4 -- -q  -f run rox-simple 2> tests/userprog/rox-simple.errors > tests/userprog/rox-simple.output
+perl -I../.. ../../tests/userprog/rox-simple.ck tests/userprog/rox-simple tests/userprog/rox-simple.result
+pass tests/userprog/rox-simple
+echo c | ../../utils/pintos -v -k -T 60 --bochs  --filesys-size=2 -p tests/userprog/rox-child -a rox-child -p tests/userprog/child-rox -a child-rox --swap-size=4 -- -q  -f run rox-child 2> tests/userprog/rox-child.errors > tests/userprog/rox-child.output
+perl -I../.. ../../tests/userprog/rox-child.ck tests/userprog/rox-child tests/userprog/rox-child.result
+pass tests/userprog/rox-child
+echo c | ../../utils/pintos -v -k -T 60 --bochs  --filesys-size=2 -p tests/userprog/rox-multichild -a rox-multichild -p tests/userprog/child-rox -a child-rox --swap-size=4 -- -q  -f run rox-multichild 2> tests/userprog/rox-multichild.errors > tests/userprog/rox-multichild.output
+perl -I../.. ../../tests/userprog/rox-multichild.ck tests/userprog/rox-multichild tests/userprog/rox-multichild.result
+pass tests/userprog/rox-multichild
+echo c | ../../utils/pintos -v -k -T 60 --bochs  --filesys-size=2 -p tests/userprog/bad-read -a bad-read --swap-size=4 -- -q  -f run bad-read 2> tests/userprog/bad-read.errors > tests/userprog/bad-read.output
+perl -I../.. ../../tests/userprog/bad-read.ck tests/userprog/bad-read tests/userprog/bad-read.result
+pass tests/userprog/bad-read
+echo c | ../../utils/pintos -v -k -T 60 --bochs  --filesys-size=2 -p tests/userprog/bad-write -a bad-write --swap-size=4 -- -q  -f run bad-write 2> tests/userprog/bad-write.errors > tests/userprog/bad-write.output
+perl -I../.. ../../tests/userprog/bad-write.ck tests/userprog/bad-write tests/userprog/bad-write.result
+FAIL tests/userprog/bad-write
+run: should have exited with -1: FAILED
+echo c | ../../utils/pintos -v -k -T 60 --bochs  --filesys-size=2 -p tests/userprog/bad-read2 -a bad-read2 --swap-size=4 -- -q  -f run bad-read2 2> tests/userprog/bad-read2.errors > tests/userprog/bad-read2.output
+perl -I../.. ../../tests/userprog/bad-read2.ck tests/userprog/bad-read2 tests/userprog/bad-read2.result
+pass tests/userprog/bad-read2
+echo c | ../../utils/pintos -v -k -T 60 --bochs  --filesys-size=2 -p tests/userprog/bad-write2 -a bad-write2 --swap-size=4 -- -q  -f run bad-write2 2> tests/userprog/bad-write2.errors > tests/userprog/bad-write2.output
+perl -I../.. ../../tests/userprog/bad-write2.ck tests/userprog/bad-write2 tests/userprog/bad-write2.result
+pass tests/userprog/bad-write2
+echo c | ../../utils/pintos -v -k -T 60 --bochs  --filesys-size=2 -p tests/userprog/bad-jump -a bad-jump --swap-size=4 -- -q  -f run bad-jump 2> tests/userprog/bad-jump.errors > tests/userprog/bad-jump.output

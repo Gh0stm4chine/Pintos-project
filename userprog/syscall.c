@@ -9,7 +9,7 @@
 #include "filesys/file.h"
 #include "threads/vaddr.h"
 #include "threads/palloc.h"
-
+#include "threads/malloc.h"
 
 
 static void syscall_handler (struct intr_frame *);
@@ -55,6 +55,8 @@ bool sys_remove (const char *file){
   //printf("system remove!\n");
   return filesys_remove(file);
 }
+
+
 
 
 int sys_open (const char *file){
@@ -151,6 +153,22 @@ void sys_close (int fdes){
   }
 }
 
+int sys_mmap (int fd, void *addr) {
+  if (fd == 0 || fd == 1 || sys_filesize(fd) <= 0) 
+    return -1;
+}
+
+void sys_munmap (int mapping) {
+  
+}
+
+struct mapping {
+  int fd ;
+  int addr;
+};
+int*  index ;
+*index = 0 ;
+struct mapping map[10];
 static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
@@ -250,6 +268,41 @@ syscall_handler (struct intr_frame *f UNUSED)
     f->eax = sys_tell(arg0); break;
   case SYS_CLOSE:
     sys_close(arg0); break;
+  case SYS_MMAP:
+    if (arg0 >= 128 || arg0 <= 1 )
+      thread_exit();
+    if(arg0 == 0 || arg0 ==1)
+      thread_exit();
+    if(!is_user_vaddr(arg1) || arg1 == 0)
+      thread_exit(); 
+    if((unsigned)arg1 >= (unsigned)(f->esp)-32){
+      int numPages = 0;
+      while(numPages*PGSIZE <= pg_round_down(arg1+sys_filesize(arg0))-pg_round_down(arg1)){
+	if(pagedir_get_page(t->pagedir,arg1+numPages*PGSIZE) == NULL){
+	  uint8_t *kpage = palloc_get_page(PAL_USER | PAL_ZERO);
+	  install_page(pg_round_down((void*)(arg1+numPages*PGSIZE)), kpage, true);
+	  invalidate_pagedir(t->pagedir);
+	}
+	numPages += 1;
+      } 
+      map[*index].fd = arg0 ;
+      map[*index].addr = (void*)arg1 ;
+      *index++;break;
+    }
+  case SYS_MUNMAP:
+    if(arg0 == -1)
+      thread_exit();
+    int k  = 0 ;
+    for(k=0;k<10;k++) {
+      if(arg0 == map[k].fd){
+	int numPages = 0 ;
+	while(numPages*PGSIZE <= pg_round_down(map[k].addr+sys_filesize(map[k].fd))-pg_round_down(map[k].addr)) {
+	  palloc_free_page(pg_round_down((void*)(map[k].addr+numPages*PGSIZE)));
+	  numPages++;
+	}
+      }
+    } 
+    break;
   default:  
     printf ("system call!\n");
     thread_exit ();
