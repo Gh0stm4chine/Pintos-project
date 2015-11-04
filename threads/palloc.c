@@ -112,12 +112,12 @@ void *
 palloc_get_page (enum palloc_flags flags) 
 {
   void * page = palloc_get_multiple (flags, 1);
-  if(page == NULL && flags & PAL_USER){
+  /*  if(page == NULL && flags & PAL_USER){
     return frame_evict();
   }
   if(flags & PAL_USER){
     frame_set(page);
-  }
+    } */
   return page;
 }
 
@@ -153,7 +153,7 @@ palloc_free_multiple (void *pages, size_t page_cnt)
 void
 palloc_free_page (void *page) 
 {
-  frame_free(page);
+  //frame_free(page);
   palloc_free_multiple (page, 1);
 }
 
@@ -189,3 +189,4 @@ page_from_pool (const struct pool *pool, void *page)
 
   return page_no >= start_page && page_no < end_page;
 }
+
