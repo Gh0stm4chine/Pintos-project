@@ -205,10 +205,9 @@ thread_create (const char *name, int priority,
   sf->ebp = 0;
 
   intr_set_level (old_level);
-
+  
   /* Add to run queue. */
   thread_unblock (t);
-
   return tid;
 }
 
@@ -223,7 +222,6 @@ thread_block (void)
 {
   ASSERT (!intr_context ());
   ASSERT (intr_get_level () == INTR_OFF);
-
   thread_current ()->status = THREAD_BLOCKED;
   schedule ();
 }
@@ -242,12 +240,14 @@ thread_unblock (struct thread *t)
   enum intr_level old_level;
 
   ASSERT (is_thread (t));
-
+  printf("unblocking thread %d \n", thread_current()->priority);
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
   list_push_back (&ready_list, &t->elem);
   t->status = THREAD_READY;
   intr_set_level (old_level);
+  //if(intr_get_level() != INTR_OFF )
+    thread_yield();
 }
 
 /* Returns the name of the running thread. */
@@ -342,6 +342,8 @@ thread_by_tid (tid_t tid)
   return NULL ;
 }
 
+
+
 /* Invoke function 'func' on all threads, passing along 'aux'.
    This function must be called with interrupts off. */
 void
@@ -363,15 +365,8 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
-  int old_priority = thread_get_priority();
   thread_current()->priority = new_priority;
-   printf("new priority set\n");
-  if(old_priority > new_priority) {
-    printf("lower priority\n");
-    thread_yield();
-  }
- 
-  
+  thread_yield();  
 }
 
 /* Returns the current thread's priority. */
@@ -534,8 +529,30 @@ next_thread_to_run (void)
 {
   if (list_empty (&ready_list))
     return idle_thread;
-  else
-    return list_entry (list_pop_front (&ready_list), struct thread, elem);
+  else {
+    //struct thread *thread = list_entry(list_begin(&ready_list),struct thread,elem);
+    int max_priority = -1 ;
+    struct list_elem *e;
+    struct list_elem *r;
+    r = list_begin (&ready_list);
+    ASSERT (intr_get_level () == INTR_OFF);
+    
+    for (e = list_begin (&ready_list); e != list_end (&ready_list);
+	 e = list_next (e))
+      {
+	struct thread *t = list_entry (e, struct thread, elem);
+	if(t->priority >= max_priority){
+	  max_priority = t->priority;
+	  r = e;
+	}
+      }
+    struct thread *thread = list_entry(r,struct thread,elem);
+    list_remove(r);
+    return thread ;
+  
+    
+    //return list_entry (list_pop_front (&ready_list), struct thread, elem); 
+  }
 }
 
 /* Completes a thread switch by activating the new thread's page
