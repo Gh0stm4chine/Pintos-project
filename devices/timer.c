@@ -1,10 +1,15 @@
 #include "devices/timer.h"
 #include <debug.h>
+#include <stddef.h>
 #include <inttypes.h>
 #include <round.h>
 #include <stdio.h>
 #include "devices/pit.h"
+#include "threads/flags.h"
 #include "threads/interrupt.h"
+#include "threads/intr-stubs.h"
+#include "threads/palloc.h"
+#include "threads/switch.h"
 #include "threads/synch.h"
 #include "threads/thread.h"
   
@@ -24,6 +29,15 @@ static int64_t ticks;
    Initialized by timer_calibrate(). */
 static unsigned loops_per_tick;
 
+static struct list alarms;
+
+struct alarm 
+  {
+    struct thread *thread;
+    int64_t ticks;
+    struct list_elem elem;
+  };
+
 static intr_handler_func timer_interrupt;
 static bool too_many_loops (unsigned loops);
 static void busy_wait (int64_t loops);
@@ -35,6 +49,7 @@ static void real_time_delay (int64_t num, int32_t denom);
 void
 timer_init (void) 
 {
+  list_init(&alarms);
   pit_configure_channel (0, 2, TIMER_FREQ);
   intr_register_ext (0x20, timer_interrupt, "8254 Timer");
 }
@@ -89,11 +104,20 @@ timer_elapsed (int64_t then)
 void
 timer_sleep (int64_t ticks) 
 {
-  int64_t start = timer_ticks ();
+  //int64_t start = timer_ticks ();
 
   ASSERT (intr_get_level () == INTR_ON);
-  while (timer_elapsed (start) < ticks) 
-    thread_yield ();
+
+  struct alarm *a = malloc(sizeof(struct alarm));
+  a->thread = thread_current();
+  a->ticks = ticks; 
+  list_push_back (&alarms, &a->elem);
+  //while (timer_elapsed (start) < ticks) 
+  //  thread_yield ();
+  enum intr_level old_level;
+  old_level = intr_set_level(INTR_OFF);
+  thread_block();
+  intr_set_level(old_level);
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
@@ -171,6 +195,24 @@ static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
+  if(!list_empty(&alarms)){
+    struct list_elem *e;
+    struct list_elem *r;
+    for (e = list_begin (&alarms); e != list_end (&alarms);
+	 e = list_next (e))
+      {
+	struct alarm *a = list_entry (e, struct alarm, elem);
+	a->ticks--;
+	if(a->ticks <= 0){
+	  e = list_prev(e);
+	  list_remove(list_next(e));
+	  enum intr_level old_level;
+	  old_level = intr_set_level(INTR_OFF);
+	  thread_requeue(a->thread);
+	  intr_set_level(old_level);
+	}	
+      }
+  }
   thread_tick ();
 }
 
