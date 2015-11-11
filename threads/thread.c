@@ -240,7 +240,7 @@ thread_unblock (struct thread *t)
   enum intr_level old_level;
 
   ASSERT (is_thread (t));
-  printf("unblocking thread %d \n", thread_current()->priority);
+  //printf("unblocking thread %d \n", thread_current()->priority);
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
   list_push_back (&ready_list, &t->elem);
@@ -365,7 +365,10 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
-  thread_current()->priority = new_priority;
+  struct thread *t = thread_current();
+  if(list_empty(&t->locks))
+     t->priority = new_priority;
+  t->real_priority = new_priority;
   thread_yield();  
 }
 
@@ -490,9 +493,13 @@ init_thread (struct thread *t, const char *name, int priority)
   t->status = THREAD_BLOCKED;
   strlcpy (t->name, name, sizeof t->name);
   char *ptr ;
-  strtok_r(t->name," ",&ptr);
+  //strtok_r(t->name," ",&ptr); messed up priority-sema
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
+  t->real_priority = priority;
+
+  t->lock = NULL;
+  list_init(&t->locks);
 
   t->metastatus = -1;
   t->start = 0;
@@ -541,7 +548,7 @@ next_thread_to_run (void)
 	 e = list_next (e))
       {
 	struct thread *t = list_entry (e, struct thread, elem);
-	if(t->priority >= max_priority){
+	if(t->priority > max_priority){
 	  max_priority = t->priority;
 	  r = e;
 	}
