@@ -298,10 +298,10 @@ thread_exit (void)
   /* Remove thread from all threads list, set our status to dying,
      and schedule another process.  That process will destroy us
      when it calls thread_schedule_tail(). */
-  sema_up(&t->parent);
-  sema_down(&t->zombie);
   intr_disable ();
   list_remove (&thread_current()->allelem);
+  sema_up(&t->parent);
+  sema_down(&t->zombie);
   thread_current ()->status = THREAD_DYING;
   schedule ();
   NOT_REACHED ();

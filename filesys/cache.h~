@@ -1,0 +1,2 @@
+
+off_t inode_get_cache (struct inode *inode, void *buffer_, off_t size, off_t offset);
