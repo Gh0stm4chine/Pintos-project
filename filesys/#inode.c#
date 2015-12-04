@@ -460,9 +460,12 @@ inode_grow(struct inode *inode, int size)
   int pos = disk_inode->length;
   int new = pos + BLOCK_SECTOR_SIZE;
   int sector;
+  
+  if(
+
   if (new < NUM_DIRECT*BLOCK_SECTOR_SIZE){
     if (free_map_allocate(1, &disk_inode->data[new/BLOCK_SECTOR_SIZE])) 
-        {
+      {
 	  sector = disk_inode->data[new/BLOCK_SECTOR_SIZE];
 	  disk_inode->length += size;
 	  printf("growing directly %d\n", disk_inode->length);
