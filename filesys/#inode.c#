@@ -44,11 +44,11 @@ bytes_to_sectors (off_t size)
 /* In-memory inode. */
 struct inode 
   {    
-    int length;
+    /*int length;
     int sectors;
     int sectors1;
     int sectors21;
-    int sectors22;
+    int sectors22;*/
     struct list_elem elem;              /* Element in inode list. */
     block_sector_t sector;              /* Sector number of disk location. */
     int open_cnt;                       /* Number of openers. */
@@ -233,7 +233,7 @@ inode_open (block_sector_t sector)
   inode->removed = false;
   struct inode_disk *disk_inode = malloc(sizeof *disk_inode);
   cache_read (fs_device, disk_inode, inode->sector, 0, BLOCK_SECTOR_SIZE);
-  inode->length = disk_inode->length;
+  inode->length = disk_inode->length;/*
   inode->sectors = 0;
   inode->sectors1 = 0;
   inode->sectors21 = 0;
@@ -248,7 +248,7 @@ inode_open (block_sector_t sector)
     inode->sectors1 = NUM_SINDIR;
     inode->sectors21 = (inode->length-NUM_DIRECT*512-NUM_SINDIR*128*512)/(128*128*512);
     inode->sectors22 = (inode->length-NUM_DIRECT+NUM_SINDIR*128+inode->sectors21*128*128*512)/(128*128*512);
-  }
+    }*/
   
   free(disk_inode);
   return inode;
